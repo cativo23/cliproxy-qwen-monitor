@@ -79,19 +79,58 @@ git clone https://github.com/cativo23/cliproxy-qwen-monitor.git
 cd cliproxy-qwen-monitor
 ```
 
-**2. Start the monitor in background:**
+**2. Start the monitor:**
 
 ```bash
-# From your CLIProxyAPI directory (where docker-compose.local.yml exists)
+# Option A: Quick start with defaults
 nohup bash /path/to/cliproxy-qwen-monitor/scripts/auto-restart-qwen.sh &
+
+# Option B: With custom configuration
+bash auto-restart-qwen.sh --interval 5 --cooldown 30 --verbose
+
+# Option C: Using config file
+bash auto-restart-qwen.sh --config ~/.config/qwen-monitor/config
+
+# Option D: As systemd service (Linux)
+sudo systemctl start qwen-monitor
 ```
 
 **3. Verify it's running:**
 
 ```bash
+# Check process
 ps aux | grep auto-restart-qwen
+
+# Check PID file
+cat /tmp/qwen-monitor.pid
+
+# Follow logs in real-time
 tail -f /tmp/cliproxyapi-monitor.log
+
+# Check systemd status
+sudo systemctl status qwen-monitor
 ```
+
+---
+
+## Features
+
+### v0.2.0 Professional Features
+
+| Feature | Description |
+|:--------|:------------|
+| **CLI Flags** | Configure without editing: `--interval`, `--cooldown`, `--container`, etc. |
+| **Config File** | Load settings from `/etc/qwen-monitor/config` or custom path |
+| **Colors** | TTY-safe colored output (auto-disabled in pipes) |
+| **Verbose Mode** | Debug output with `--verbose` or `-v` |
+| **Quiet Mode** | Suppress non-essential output with `--quiet` or `-q` |
+| **Help System** | Built-in `--help` and `--version` flags |
+| **Signal Handling** | Graceful shutdown on SIGINT/SIGTERM |
+| **Validation** | Config validation before starting |
+| **Dependency Check** | Verifies Docker and docker-compose at startup |
+| **PID File** | Track running instance at `/tmp/qwen-monitor.pid` |
+| **systemd** | Native service unit for Linux servers |
+| **Completions** | Bash and Zsh tab completion |
 
 ---
 
@@ -115,13 +154,52 @@ tail -f /tmp/cliproxyapi-monitor.log
 - Restarts container with `docker compose -f docker-compose.local.yml restart`
 - Enforces 10-second cooldown between restarts
 
-**Configuration (edit script):**
+**Command-line Options:**
 
 ```bash
-CHECK_INTERVAL=2      # Seconds between log checks
-COOLDOWN=10           # Seconds between restarts
-CONTAINER="cliproxyapi"
-COMPOSE_FILE="docker-compose.local.yml"
+./scripts/auto-restart-qwen.sh [OPTIONS]
+
+Options:
+  -i, --interval SECONDS      Check interval (default: 2)
+  -c, --cooldown SECONDS      Cooldown between restarts (default: 10)
+  -n, --container NAME        Container name (default: cliproxyapi)
+  -f, --compose-file FILE     Docker Compose file (default: docker-compose.local.yml)
+  -m, --monitor-log FILE      Monitor log file (default: /tmp/cliproxyapi-monitor.log)
+  -r, --restart-log FILE      Restart history log (default: /tmp/cliproxyapi-restarts.log)
+  -C, --config FILE           Load configuration from file
+  -v, --verbose               Enable verbose/debug output
+  -q, --quiet                 Suppress non-error output
+  -h, --help                  Show help message
+  -V, --version               Show version
+```
+
+**Examples:**
+
+```bash
+# Run with defaults
+./scripts/auto-restart-qwen.sh
+
+# Custom interval and cooldown
+./scripts/auto-restart-qwen.sh --interval 5 --cooldown 30
+
+# Verbose mode for debugging
+./scripts/auto-restart-qwen.sh --verbose
+
+# Load from config file
+./scripts/auto-restart-qwen.sh --config /etc/qwen-monitor/config
+```
+
+**Configuration File:**
+
+```bash
+# /etc/qwen-monitor/config or ~/.config/qwen-monitor/config
+CHECK_INTERVAL=2
+COOLDOWN_PERIOD=10
+CONTAINER_NAME=cliproxyapi
+COMPOSE_FILE=docker-compose.local.yml
+MONITOR_LOG=/tmp/cliproxyapi-monitor.log
+RESTART_LOG=/tmp/cliproxyapi-restarts.log
+VERBOSE=false
 ```
 
 ### test-qwen-quota.sh
@@ -268,16 +346,71 @@ wc -l < /tmp/cliproxyapi-restarts.log
 
 ---
 
+## Installation
+
+### Quick Install (Recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cativo23/cliproxy-qwen-monitor/main/quickinstall.sh | bash
+```
+
+### Manual Installation
+
+```bash
+# 1. Clone repository
+git clone https://github.com/cativo23/cliproxy-qwen-monitor.git
+cd cliproxy-qwen-monitor
+
+# 2. Install shell completions (optional)
+sudo cp completions/qwen-monitor.bash /etc/bash_completion.d/
+source /etc/bash_completion.d/qwen-monitor.bash
+
+# 3. Install config template (optional)
+sudo mkdir -p /etc/qwen-monitor
+sudo cp config/qwen-monitor.conf.example /etc/qwen-monitor/config
+
+# 4. Install systemd service (Linux, optional)
+sudo cp systemd/qwen-monitor.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable qwen-monitor
+```
+
+### systemd Service (Linux Servers)
+
+For production deployments, use the systemd service:
+
+```bash
+# Edit service file (adjust paths)
+sudo nano /etc/systemd/system/qwen-monitor.service
+
+# Enable and start
+sudo systemctl enable qwen-monitor
+sudo systemctl start qwen-monitor
+
+# Check status
+sudo systemctl status qwen-monitor
+
+# View logs
+journalctl -u qwen-monitor -f
+```
+
+---
+
 ## Project Structure
 
 ```
 cliproxy-qwen-monitor/
   scripts/
-    auto-restart-qwen.sh    # Main monitor script
+    auto-restart-qwen.sh    # Main monitor (professional version)
     test-qwen-quota.sh      # Test through proxy
     test-qwen-direct.sh     # Test direct API
-  docs/
-    (future documentation)
+  config/
+    qwen-monitor.conf.example   # Configuration template
+  systemd/
+    qwen-monitor.service    # systemd service unit
+  completions/
+    qwen-monitor.bash       # Bash completions
+    qwen-monitor.zsh        # Zsh completions
   .github/
     ISSUE_TEMPLATE/
       bug_report.md

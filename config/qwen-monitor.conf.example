@@ -1,0 +1,55 @@
+#===============================================================================
+# CLIProxyAPI Qwen Monitor - Configuration File
+#===============================================================================
+# Copy this file to:
+#   - /etc/qwen-monitor/config          (system-wide)
+#   - ~/.config/qwen-monitor/config     (user-specific)
+#   - ./qwen-monitor.conf               (local)
+#
+# Then run: auto-restart-qwen.sh --config /path/to/config
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# Monitor Settings
+#-------------------------------------------------------------------------------
+
+# Check interval in seconds
+# How often to check for Qwen errors (minimum: 1)
+CHECK_INTERVAL=2
+
+# Cooldown period between restarts in seconds
+# Prevents rapid restart loops (minimum: 1)
+COOLDOWN_PERIOD=10
+
+#-------------------------------------------------------------------------------
+# Docker Settings
+#-------------------------------------------------------------------------------
+
+# Name of the CLIProxyAPI container
+# Find it with: docker ps --format '{{.Names}}'
+CONTAINER_NAME=cliproxyapi
+
+# Docker Compose file path (relative to script or absolute)
+COMPOSE_FILE=docker-compose.local.yml
+
+#-------------------------------------------------------------------------------
+# Logging
+#-------------------------------------------------------------------------------
+
+# Monitor log file (all events)
+MONITOR_LOG=/tmp/cliproxyapi-monitor.log
+
+# Restart history log (timestamp + counts only)
+RESTART_LOG=/tmp/cliproxyapi-restarts.log
+
+#-------------------------------------------------------------------------------
+# Output
+#-------------------------------------------------------------------------------
+
+# Enable verbose/debug output (true/false)
+# Shows detailed information about each check
+VERBOSE=false
+
+# Suppress non-error output (true/false)
+# Only errors and warnings will be shown
+QUIET=false
