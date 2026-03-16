@@ -7,10 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-03-15
+
 ### Added
-- Initial release with auto-restart functionality for Qwen quota errors
-- Monitor script for detecting Qwen quota exceeded errors
-- Test scripts for quota testing (direct API and proxy)
+- **Installer**: `quickinstall.sh` - One-line installation script
 
 ## [0.1.0] - 2026-03-15
 
@@ -31,5 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Uses `docker compose restart` for reliable container restart
 - Logs to `/tmp/cliproxyapi-monitor.log` and `/tmp/cliproxyapi-restarts.log`
 
-[Unreleased]: https://github.com/cativo23/cliproxy-qwen-monitor/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/cativo23/cliproxy-qwen-monitor/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/cativo23/cliproxy-qwen-monitor/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/cativo23/cliproxy-qwen-monitor/releases/tag/v0.1.0
