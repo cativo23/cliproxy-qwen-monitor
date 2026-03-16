@@ -320,18 +320,21 @@ detect_qwen_errors() {
     local quota_count cooling_count suspended_count total
     local filtered_logs
 
+    # NOTE: This function is called inside $(...), so all log output must go
+    # to stderr (>&2) to avoid corrupting the return value on stdout.
+
     # Filter logs: only consider lines with timestamps AFTER the last restart
     # Log format: [2026-03-16 15:10:23] ...
     if [[ -n "$last_restart_timestamp" ]]; then
         filtered_logs=$(filter_logs_after_timestamp "$logs" "$last_restart_timestamp")
-        log_verbose "Filtered logs: $(echo "$filtered_logs" | wc -l) lines after $last_restart_timestamp"
+        log_verbose "Filtered logs: $(echo "$filtered_logs" | wc -l) lines after $last_restart_timestamp" >&2
     else
         filtered_logs="$logs"
     fi
 
     # If no lines remain after filtering, no new errors
     if [[ -z "$filtered_logs" ]]; then
-        log_verbose "No log lines after last restart timestamp"
+        log_verbose "No log lines after last restart timestamp" >&2
         echo "0:0:0:0"
         return
     fi
@@ -343,7 +346,7 @@ detect_qwen_errors() {
 
     total=$((quota_count + cooling_count + suspended_count))
 
-    log_verbose "Error counts - quota=$quota_count, cooling=$cooling_count, suspended=$suspended_count (after $last_restart_timestamp)"
+    log_verbose "Error counts - quota=$quota_count, cooling=$cooling_count, suspended=$suspended_count (after ${last_restart_timestamp:-startup})" >&2
 
     echo "$total:$quota_count:$cooling_count:$suspended_count"
 }
