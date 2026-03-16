@@ -375,6 +375,8 @@ filter_logs_after_timestamp() {
 }
 
 restart_container() {
+    local quota_val="${1:-0}"
+    local cooling_val="${2:-0}"
     local now timestamp
 
     now=$(date +%s)
@@ -407,7 +409,7 @@ restart_container() {
 
     if [[ $exit_code -eq 0 ]]; then
         log_success "Container restarted successfully"
-        echo "$timestamp - Restart (quota=$2, cooling=$3)" >> "$restart_log"
+        echo "$timestamp - Restart (quota=$quota_val, cooling=$cooling_val)" >> "$restart_log"
         last_restart=$now
         last_restart_timestamp="$timestamp"
         log_verbose "Updated last_restart_timestamp=$last_restart_timestamp"
@@ -447,9 +449,10 @@ monitor_loop() {
         fi
 
         # Sleep with interrupt check
-        local i
-        for ((i=0; i<check_interval && running; i++)); do
+        local i=0
+        while [[ $i -lt $check_interval ]] && $running; do
             sleep 1
+            ((i++)) || true
         done
     done
 }
