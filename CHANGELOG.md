@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Log Viewer**: `show-logs.sh` — pretty-print monitor and restart logs with colors, stats, bar charts, and follow mode
+
+### Fixed
+- **Crash in nohup/non-TTY**: `((i++))` arithmetic returning 0 (falsy) caused `set -e` to kill the script when run with `nohup` in background mode
+- **Unbound variable**: `restart_container()` accessed positional params `$2`/`$3` that could be missing under `set -u`
+
 ## [0.3.0] - 2026-03-16
 
 ### Fixed

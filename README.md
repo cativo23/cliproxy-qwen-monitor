@@ -139,6 +139,7 @@ sudo systemctl status qwen-monitor
 | Script | Description | Usage |
 |:-------|:------------|:------|
 | **`auto-restart-qwen.sh`** | Main monitor - auto-restarts CLIProxyAPI on Qwen errors | `./scripts/auto-restart-qwen.sh` |
+| **`show-logs.sh`** | Pretty log viewer with stats and colors | `./scripts/show-logs.sh [--stats]` |
 | **`test-qwen-quota.sh`** | Test quota through CLIProxyAPI proxy | `./scripts/test-qwen-quota.sh [count]` |
 | **`test-qwen-direct.sh`** | Test quota directly against Qwen API | `./scripts/test-qwen-direct.sh [count]` |
 
@@ -200,6 +201,27 @@ COMPOSE_FILE=docker-compose.local.yml
 MONITOR_LOG=/tmp/cliproxyapi-monitor.log
 RESTART_LOG=/tmp/cliproxyapi-restarts.log
 VERBOSE=false
+```
+
+### show-logs.sh
+
+**Purpose:** Pretty-print monitor and restart logs with colors and stats.
+
+```bash
+# Show both logs with stats (default)
+./scripts/show-logs.sh
+
+# Follow monitor log in real-time
+./scripts/show-logs.sh -f
+
+# Show last 50 lines
+./scripts/show-logs.sh -n 50
+
+# Show restart statistics only
+./scripts/show-logs.sh --stats
+
+# Show only restart history
+./scripts/show-logs.sh --restarts
 ```
 
 ### test-qwen-quota.sh
@@ -402,6 +424,7 @@ journalctl -u qwen-monitor -f
 cliproxy-qwen-monitor/
   scripts/
     auto-restart-qwen.sh    # Main monitor (professional version)
+    show-logs.sh            # Pretty log viewer with stats
     test-qwen-quota.sh      # Test through proxy
     test-qwen-direct.sh     # Test direct API
   config/
