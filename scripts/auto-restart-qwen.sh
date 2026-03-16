@@ -391,11 +391,11 @@ restart_container() {
         return 1
     fi
 
-    log_info "Restarting container '${container_name}'..."
+    log_info "Restarting container '${container_name}' with docker-compose..."
 
-    # Execute restart — use docker restart directly (no compose file dependency)
+    # Execute restart using docker-compose with the specified compose file
     local output exit_code
-    if output=$(docker restart "$container_name" 2>&1); then
+    if output=$(docker-compose -f "$compose_file" restart "$container_name" 2>&1); then
         exit_code=0
     else
         exit_code=$?
@@ -437,7 +437,7 @@ monitor_loop() {
 
         if [[ "$total_errors" -gt 0 ]]; then
             log_info "DETECTED: quota=$quota, cooling=$cooling, suspended=$suspended"
-            restart_container "$quota" "$cooling"
+            restart_container "$quota" "$cooling" || true
         else
             log_verbose "No errors detected"
         fi
