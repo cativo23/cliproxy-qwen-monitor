@@ -7,12 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Log Viewer**: `show-logs.sh` — pretty-print monitor and restart logs with colors, stats, bar charts, and follow mode
-
 ### Fixed
-- **Crash in nohup/non-TTY**: `((i++))` arithmetic returning 0 (falsy) caused `set -e` to kill the script when run with `nohup` in background mode
-- **Unbound variable**: `restart_container()` accessed positional params `$2`/`$3` that could be missing under `set -u`
+- **False positive restarts**: Changed `SUSPENDED_PATTERN` from `Suspended client.*quota` to `Suspended client qwen-.*quota` to avoid restarting on non-Qwen quota errors (e.g., antigravity/claude)
+- **Restart failures**: Replaced `docker compose -f FILE restart` with `docker restart` to eliminate compose file path dependency
 
 ## [0.3.0] - 2026-03-16
 

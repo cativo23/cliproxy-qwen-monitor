@@ -87,19 +87,19 @@ init_colors() {
 }
 
 log_info() {
-    [[ "$quiet" == true ]] && return 0
+    if [[ "$quiet" == true ]]; then return 0; fi
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
     echo -e "${COLORS[blue]}[INFO]${COLORS[reset]} $msg" | tee -a "$monitor_log"
 }
 
 log_success() {
-    [[ "$quiet" == true ]] && return 0
+    if [[ "$quiet" == true ]]; then return 0; fi
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $1"
     echo -e "${COLORS[green]}[SUCCESS]${COLORS[reset]} $msg" | tee -a "$monitor_log"
 }
 
 log_warning() {
-    [[ "$quiet" == true ]] && return 0
+    if [[ "$quiet" == true ]]; then return 0; fi
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] WARNING: $1"
     echo -e "${COLORS[yellow]}[WARN]${COLORS[reset]} $msg" | tee -a "$monitor_log" >&2
 }
@@ -110,7 +110,7 @@ log_error() {
 }
 
 log_verbose() {
-    [[ "$verbose" != true ]] && return 0
+    if [[ "$verbose" != true ]]; then return 0; fi
     local msg="[$(date '+%Y-%m-%d %H:%M:%S')] [DEBUG] $1"
     echo -e "${COLORS[cyan]}[DEBUG]${COLORS[reset]} $msg" | tee -a "$monitor_log"
 }
@@ -285,7 +285,7 @@ cleanup() {
 
     # Remove PID file if exists
     local pid_file="/tmp/${SCRIPT_NAME}.pid"
-    [[ -f "$pid_file" ]] && rm -f "$pid_file"
+    if [[ -f "$pid_file" ]]; then rm -f "$pid_file"; fi
 
     log_info "Monitor stopped. Goodbye!"
     exit $EXIT_SUCCESS
@@ -365,7 +365,9 @@ filter_logs_after_timestamp() {
         line_ts=$(echo "$line" | sed -n 's/^\[\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}\)\].*/\1/p' 2>/dev/null)
 
         # Skip lines without timestamps
-        [[ -z "$line_ts" ]] && continue
+        if [[ -z "$line_ts" ]]; then
+            continue
+        fi
 
         # Lexicographic comparison works for ISO timestamps
         if [[ "$line_ts" > "$ref_timestamp" ]]; then
@@ -453,7 +455,7 @@ monitor_loop() {
 # Functions: Startup
 #-------------------------------------------------------------------------------
 print_banner() {
-    [[ "$quiet" == true ]] && return 0
+    if [[ "$quiet" == true ]]; then return 0; fi
 
     cat << EOF
 ${COLORS[bold]}${COLORS[cyan]}╔═══════════════════════════════════════════════════════════╗
