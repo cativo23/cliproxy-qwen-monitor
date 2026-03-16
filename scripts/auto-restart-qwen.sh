@@ -21,7 +21,7 @@ set -euo pipefail
 # Constants
 #-------------------------------------------------------------------------------
 readonly SCRIPT_NAME="qwen-monitor"
-readonly SCRIPT_VERSION="0.1.1"
+readonly SCRIPT_VERSION="0.3.0"
 readonly SCRIPT_AUTHOR="cativo23"
 readonly SCRIPT_REPO="https://github.com/cativo23/cliproxy-qwen-monitor"
 
@@ -56,19 +56,20 @@ declare -A COLORS=(
 )
 
 #-------------------------------------------------------------------------------
-# Global Variables
+# Global Variables (mutable — set by parse_arguments / load_config_file)
 #-------------------------------------------------------------------------------
-local check_interval="$DEFAULT_CHECK_INTERVAL"
-local cooldown_period="$DEFAULT_COOLDOWN"
-local container_name="$DEFAULT_CONTAINER"
-local compose_file="$DEFAULT_COMPOSE_FILE"
-local monitor_log="$DEFAULT_MONITOR_LOG"
-local restart_log="$DEFAULT_RESTART_LOG"
-local verbose=false
-local quiet=false
-local config_file=""
-local last_restart=0
-local running=true
+check_interval="$DEFAULT_CHECK_INTERVAL"
+cooldown_period="$DEFAULT_COOLDOWN"
+container_name="$DEFAULT_CONTAINER"
+compose_file="$DEFAULT_COMPOSE_FILE"
+monitor_log="$DEFAULT_MONITOR_LOG"
+restart_log="$DEFAULT_RESTART_LOG"
+verbose=false
+quiet=false
+config_file=""
+last_restart=0
+last_restart_timestamp=""  # ISO timestamp of last restart, used to filter stale errors
+running=true
 
 #-------------------------------------------------------------------------------
 # Functions: Color & Output
@@ -317,17 +318,57 @@ get_container_logs() {
 detect_qwen_errors() {
     local logs="$1"
     local quota_count cooling_count suspended_count total
+    local filtered_logs
 
-    # Count error patterns (case-insensitive)
-    quota_count=$(echo "$logs" | grep -ciE "$QWEN_QUOTA_PATTERN" 2>/dev/null) || quota_count=0
-    cooling_count=$(echo "$logs" | grep -ciE "$COOLING_DOWN_PATTERN" 2>/dev/null) || cooling_count=0
-    suspended_count=$(echo "$logs" | grep -ciE "$SUSPENDED_PATTERN" 2>/dev/null) || suspended_count=0
+    # Filter logs: only consider lines with timestamps AFTER the last restart
+    # Log format: [2026-03-16 15:10:23] ...
+    if [[ -n "$last_restart_timestamp" ]]; then
+        filtered_logs=$(filter_logs_after_timestamp "$logs" "$last_restart_timestamp")
+        log_verbose "Filtered logs: $(echo "$filtered_logs" | wc -l) lines after $last_restart_timestamp"
+    else
+        filtered_logs="$logs"
+    fi
+
+    # If no lines remain after filtering, no new errors
+    if [[ -z "$filtered_logs" ]]; then
+        log_verbose "No log lines after last restart timestamp"
+        echo "0:0:0:0"
+        return
+    fi
+
+    # Count error patterns (case-insensitive) only in NEW log lines
+    quota_count=$(echo "$filtered_logs" | grep -ciE "$QWEN_QUOTA_PATTERN" 2>/dev/null) || quota_count=0
+    cooling_count=$(echo "$filtered_logs" | grep -ciE "$COOLING_DOWN_PATTERN" 2>/dev/null) || cooling_count=0
+    suspended_count=$(echo "$filtered_logs" | grep -ciE "$SUSPENDED_PATTERN" 2>/dev/null) || suspended_count=0
 
     total=$((quota_count + cooling_count + suspended_count))
 
-    log_verbose "Error counts - quota=$quota_count, cooling=$cooling_count, suspended=$suspended_count"
+    log_verbose "Error counts - quota=$quota_count, cooling=$cooling_count, suspended=$suspended_count (after $last_restart_timestamp)"
 
     echo "$total:$quota_count:$cooling_count:$suspended_count"
+}
+
+# Filter log lines that have a timestamp strictly after the given reference timestamp.
+# Compares ISO timestamps lexicographically: "2026-03-16 15:10:23" > "2026-03-16 15:09:00"
+filter_logs_after_timestamp() {
+    local logs="$1"
+    local ref_timestamp="$2"
+
+    # Extract lines with timestamps and keep only those after ref_timestamp
+    # Log format: [YYYY-MM-DD HH:MM:SS] ...
+    while IFS= read -r line; do
+        # Extract timestamp from line: [2026-03-16 15:10:23] → 2026-03-16 15:10:23
+        local line_ts
+        line_ts=$(echo "$line" | sed -n 's/^\[\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\} [0-9]\{2\}:[0-9]\{2\}:[0-9]\{2\}\)\].*/\1/p' 2>/dev/null)
+
+        # Skip lines without timestamps
+        [[ -z "$line_ts" ]] && continue
+
+        # Lexicographic comparison works for ISO timestamps
+        if [[ "$line_ts" > "$ref_timestamp" ]]; then
+            echo "$line"
+        fi
+    done <<< "$logs"
 }
 
 restart_container() {
@@ -365,6 +406,8 @@ restart_container() {
         log_success "Container restarted successfully"
         echo "$timestamp - Restart (quota=$2, cooling=$3)" >> "$restart_log"
         last_restart=$now
+        last_restart_timestamp="$timestamp"
+        log_verbose "Updated last_restart_timestamp=$last_restart_timestamp"
         return 0
     else
         log_error "Failed to restart container (exit code: $exit_code)"
