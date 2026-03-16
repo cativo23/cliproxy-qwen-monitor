@@ -37,7 +37,7 @@ readonly DEFAULT_ERROR_PATTERNS="qwen quota exceeded,cooling down,Suspended clie
 # Error patterns (grep -E)
 readonly QWEN_QUOTA_PATTERN="qwen quota exceeded"
 readonly COOLING_DOWN_PATTERN="cooling down"
-readonly SUSPENDED_PATTERN="Suspended client.*quota"
+readonly SUSPENDED_PATTERN="Suspended client qwen-.*quota"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
@@ -389,19 +389,11 @@ restart_container() {
         return 1
     fi
 
-    log_info "Restarting container '${container_name}' with docker compose..."
+    log_info "Restarting container '${container_name}'..."
 
-    # Change to script directory parent (where docker-compose.yml should be)
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    local compose_dir
-    compose_dir="$(cd "$script_dir/.." && pwd)"
-
-    cd "$compose_dir"
-
-    # Execute restart
+    # Execute restart — use docker restart directly (no compose file dependency)
     local output exit_code
-    if output=$(docker compose -f "$compose_file" restart "$container_name" 2>&1); then
+    if output=$(docker restart "$container_name" 2>&1); then
         exit_code=0
     else
         exit_code=$?
