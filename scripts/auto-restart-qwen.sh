@@ -29,7 +29,7 @@ readonly SCRIPT_REPO="https://github.com/cativo23/cliproxy-qwen-monitor"
 readonly DEFAULT_CHECK_INTERVAL=2
 readonly DEFAULT_COOLDOWN=10
 readonly DEFAULT_CONTAINER="cliproxyapi"
-readonly DEFAULT_COMPOSE_FILE="docker-compose.local.yml"
+readonly DEFAULT_COMPOSE_FILE="${HOME}/cliproxyapi-dashboard/docker-compose.local.yml"
 readonly DEFAULT_MONITOR_LOG="/tmp/cliproxyapi-monitor.log"
 readonly DEFAULT_RESTART_LOG="/tmp/cliproxyapi-restarts.log"
 readonly DEFAULT_ERROR_PATTERNS="qwen quota exceeded,cooling down,Suspended client.*quota"
@@ -388,6 +388,13 @@ restart_container() {
     if [[ $((now - last_restart)) -lt $cooldown_period ]]; then
         local remaining=$((cooldown_period - (now - last_restart)))
         log_verbose "Cooldown active, ${remaining}s remaining"
+        return 1
+    fi
+
+    # Validate compose file exists before attempting restart
+    if [[ ! -f "$compose_file" ]]; then
+        log_error "COMPOSE_FILE not found: $compose_file"
+        log_info "Set correct path with: -f /path/to/docker-compose.yml"
         return 1
     fi
 

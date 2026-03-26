@@ -1,30 +1,44 @@
 <div align="center">
 
-**CLIProxyAPI Qwen Monitor**
-
-Automatically restarts CLIProxyAPI when it detects Qwen quota errors.
-
-[![GitHub release](https://img.shields.io/github/v/release/cativo23/cliproxy-qwen-monitor?include_prereleases&style=flat-square)](https://github.com/cativo23/cliproxy-qwen-monitor/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+```
+ ____ _     ___ ____                         _    ____ ___
+/ ___| |   |_ _|  _ \ _ __ _____  ___   _   / \  |  _ \_ _|
+| |   | |    | || |_) | '__/ _ \ \/ / | | | / _ \ | |_) | |
+| |___| |___ | ||  __/| | | (_) >  <| |_| |/ ___ \|  __/| |
+\____|_____|___|_|   |_|  \___/_/\_\\__, /_/   \_\_|  |___|
+                                    |___/
+ ___                       __  __             _ _
+/ _ \__      _____ _ __   |  \/  | ___  _ __ (_) |_ ___  _ __
+| | | \ \ /\ / / _ \ '_ \  | |\/| |/ _ \| '_ \| | __/ _ \| '__|
+| |_| |\ V  V /  __/ | | | | |  | | (_) | | | | | || (_) | |
+\__\_\ \_/\_/ \___|_| |_| |_|  |_|\___/|_| |_|_|\__\___/|_|
+```
 
 </div>
 
----
+[![GitHub release](https://img.shields.io/github/v/release/cativo23/cliproxy-qwen-monitor?include_prereleases&style=flat-square)](https://github.com/cativo23/cliproxy-qwen-monitor/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Bash](https://img.shields.io/badge/bash-5.0+-brightgreen.svg)](https://www.gnu.org/software/bash/)
+[![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://www.docker.com/)
 
-## Problem
+## Overview
 
-CLIProxyAPI Plus has a bug: when one Qwen account reaches its daily quota, **all** accounts in the pool get blocked until the container is manually restarted.
+**Automatic CLIProxyAPI recovery from Qwen quota errors.** This tool monitors CLIProxyAPI logs and automatically restarts the container when it detects Qwen API quota exhaustion, preventing service downtime without manual intervention.
 
-## Solution
+> **Why this exists:** CLIProxyAPI Plus has a bug where reaching the daily quota on one Qwen account blocks **all** accounts in the pool until the container is manually restarted. This monitor automates the recovery process.
 
-This script monitors CLIProxyAPI logs and automatically restarts the container when it detects Qwen quota errors.
+## Description
 
-- **Monitors** every 2 seconds
-- **Detects** only Qwen errors (not other providers)
-- **Restarts** the container with a 10-second cooldown
-- **Logs** all events for debugging
+CLIProxyAPI Qwen Monitor is a lightweight bash script that continuously monitors CLIProxyAPI container logs for Qwen-specific quota errors and automatically restarts the container to restore service.
 
----
+Key features:
+
+- **Continuous monitoring** every 2 seconds
+- **Qwen-specific detection** — ignores errors from other providers
+- **Automatic restart** with configurable cooldown (default: 10s)
+- **Timestamp-aware filtering** — avoids counting stale errors after restart
+- **Comprehensive logging** for debugging and audit trails
+- **Systemd support** for production deployment
 
 ## Quick Start
 
@@ -52,8 +66,6 @@ tail -f /tmp/cliproxyapi-monitor.log
 kill $(cat /tmp/qwen-monitor.pid) 2>/dev/null || pkill -f auto-restart-qwen
 ```
 
----
-
 ## Usage
 
 ```bash
@@ -74,25 +86,27 @@ kill $(cat /tmp/qwen-monitor.pid) 2>/dev/null || pkill -f auto-restart-qwen
 | `-i, --interval SECS` | Check interval | 2 |
 | `-c, --cooldown SECS` | Cooldown between restarts | 10 |
 | `-n, --container NAME` | Container name | cliproxyapi |
+| `-f, --compose-file FILE` | Docker Compose file path | `$HOME/cliproxyapi-dashboard/docker-compose.local.yml` |
 | `-v, --verbose` | Debug mode | - |
 | `-q, --quiet` | Errors only | - |
+| `-C, --config FILE` | Load configuration file | - |
 | `-h, --help` | Show help | - |
 
 ### Configuration File
 
-Optional: `/etc/qwen-monitor/config` or `~/.config/qwen-monitor/config`
+Optional: `config/qwen-monitor.conf` or `~/.config/qwen-monitor/config`
 
 ```bash
 CHECK_INTERVAL=2
 COOLDOWN_PERIOD=10
 CONTAINER_NAME=cliproxyapi
-COMPOSE_FILE=docker-compose.local.yml
+COMPOSE_FILE=/home/user/cliproxyapi-dashboard/docker-compose.local.yml
 VERBOSE=false
 ```
 
 ### Configure Docker-Compose Path
 
-**Important:** The script needs the path to the `docker-compose.yml` file from your CLIProxyAPI installation.
+**Important:** The script needs the absolute path to the `docker-compose.yml` file from your CLIProxyAPI installation.
 
 **Option 1: Use configuration file (recommended)**
 
@@ -127,18 +141,14 @@ ls -la /path/to/docker-compose.local.yml
 docker-compose -f /path/to/docker-compose.local.yml restart cliproxyapi
 ```
 
----
-
 ## Scripts
 
 | Script | Description |
 |--------|-------------|
-| `auto-restart-qwen.sh` | Main monitor |
+| `auto-restart-qwen.sh` | Main monitor script |
 | `show-logs.sh` | View logs with colors and stats |
 | `test-qwen-quota.sh` | Quota test via proxy |
 | `test-qwen-direct.sh` | Direct API quota test |
-
----
 
 ## Logs
 
@@ -161,8 +171,6 @@ tail -f /tmp/cliproxyapi-monitor.log
 cat /tmp/cliproxyapi-restarts.log
 ```
 
----
-
 ## Install as a Service (Linux)
 
 ```bash
@@ -184,15 +192,11 @@ sudo systemctl status qwen-monitor
 journalctl -u qwen-monitor -f
 ```
 
----
-
 ## Requirements
 
 - Docker + Docker Compose plugin
 - Bash 5.0+
 - CLIProxyAPI Plus running
-
----
 
 ## Project Structure
 
@@ -215,7 +219,13 @@ cliproxy-qwen-monitor/
 └── LICENSE
 ```
 
----
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
